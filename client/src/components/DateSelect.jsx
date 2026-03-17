@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 
 const DateSelect = ({ dateTime, id }) => {
 
+    console.log("DateSelect props:", { dateTime, id });
     const navigate = useNavigate();
 
     const [selected, setSelected] = useState(null)
@@ -33,7 +34,7 @@ const DateSelect = ({ dateTime, id }) => {
 
                         {/* Date buttons */}
                         <div className='flex flex-wrap gap-4 md:max-w-lg'>
-                            {Object.keys(dateTime).map((date) => (
+                            {dateTime && Object.keys(dateTime).map((date) => (
                                 <button
                                     key={date}
                                     onClick={() => setSelected(date)}

@@ -2,21 +2,36 @@ import React,{useEffect, useState} from 'react'
 import { dummyBookingData } from '../../assets/assets';
 import Title from '../../components/admin/Title';
 import { dateFormat } from '../../lib/dateFormat';
+import { useAppContext } from '../../context/AppContext';
+import toast from 'react-hot-toast';
 
 const ListBookings = () => {
-  const currency = import.meta.env.VITE_CURRENCY 
+  const currency = import.meta.env.VITE_CURRENCY
+  const {axios,getToken,user,image_base_url}=useAppContext() 
 
   const [bookings,setBookings]=useState([]);
   const [isLoading,setIsLoading]=useState(true);
 
   const getAllBookings = async () => {
-    setBookings(dummyBookingData)
+    try {
+      const {data} = await axios.get('/api/admin/all-bookings', {headers: {Authorization: `Bearer ${await getToken()}`}});
+      if(data.success) {
+        setBookings(data.bookings);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Error fetching bookings');
+    }
     setIsLoading(false);
   };
 
   useEffect(()=>{
-    getAllBookings();
-  },[]);
+    if(user) {
+      getAllBookings();
+    }
+  },[user]);
 
   return isLoading ? (
     <p className="p-4">Loading...</p>
@@ -40,7 +55,7 @@ const ListBookings = () => {
                 <td className="p-2 min-w-45 pl-5">{item.user.name}</td>
                 <td className="p-2">{item.show.movie.title}</td>
                 <td className="p-2">{dateFormat(item.show.showDateTime)}</td>
-                <td className="p-2">{Object.keys(item.bookedSeats).map(seat=>item.bookedSeats[seat]).join(",")}</td>
+                <td className="p-2">{Object.keys(item.bookedSeats).map(seat=>item.bookedSeats[seat]).join(", ")}</td>
                 <td className="p-2">
                   {currency}{item.amount}
                 </td>
