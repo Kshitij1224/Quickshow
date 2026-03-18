@@ -34,6 +34,9 @@ export const createBooking = async(req,res) => {
             bookedSeats: selectedSeats
         })
         
+        await booking.populate('user');
+        await booking.populate('show');
+        
         selectedSeats.map((seat)=>{
             showData.occupiedSeats[seat]=userId;
         })
