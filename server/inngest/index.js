@@ -49,23 +49,53 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
     { id: 'release-seats-delete-booking' },
     { event: "app/checkpayment" },
     async ({ event, step }) => {
+
         const tenminutesLater = new Date(Date.now() + 10 * 60 * 1000);
         await step.sleepUntil('wait-for-10-minutes', tenminutesLater);
+
         await step.run('check-payment-status', async () => {
-            const bookingId = event.data.bookingId;
-            const booking = await Booking.findById(bookingId)
-            if (!booking.isPaid) {
-                const show = await Show.findById(booking.show)
-                booking.bookedSeats.forEach((seat) => {
-                    delete show.occupiedSeats[seat]
-                });
-                show.markModified('occupiedSeats')
-                await show.save()
-                await Booking.findByIdAndDelete(booking._id)
+
+            const bookingId = event.data?.bookingId;
+
+            if (!bookingId) {
+                console.error("❌ bookingId missing in event");
+                return;
             }
-        })
+
+            const booking = await Booking.findById(bookingId);
+
+            if (!booking) {
+                console.error("❌ Booking not found:", bookingId);
+                return;
+            }
+
+            if (booking.isPaid) {
+                console.log("✅ Booking already paid:", bookingId);
+                return;
+            }
+
+            const show = await Show.findById(booking.show);
+
+            if (!show) {
+                console.error("❌ Show not found for booking:", bookingId);
+                return;
+            }
+
+            if (show.occupiedSeats) {
+                booking.bookedSeats.forEach((seat) => {
+                    delete show.occupiedSeats[seat];
+                });
+
+                show.markModified('occupiedSeats');
+                await show.save();
+            }
+
+            await Booking.findByIdAndDelete(booking._id);
+
+            console.log("🧹 Released seats & deleted booking:", bookingId);
+        });
     }
-)
+);
 
 const sendBookingConfirmationEmail = inngest.createFunction(
     { id: "send-booking-confirmation-email" },

@@ -5,6 +5,8 @@ import stripe from 'stripe'
 
 const checkSeatsAvailability = async(showId, selectedSeats) => {
     try {
+        console.log(showId);
+        
         const showData = await Show.findById(showId);
         if(!showData) return false;
         const occupiedSeats = showData.occupiedSeats;
