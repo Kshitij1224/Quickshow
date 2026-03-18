@@ -11,11 +11,11 @@ const Navbar = () => {
   const { user } = useUser()
   const { openSignIn } = useClerk()
   const navigate = useNavigate()
-  const {favoriteMovies} = useAppContext()
+  const { favoriteMovies } = useAppContext()
 
   return (
     <div className='fixed top-0 left-0 z-50 w-full flex items-center justify-between px-6 md:px-16 lg:px-36 py-5'>
-      
+
       <Link to='/' className='max-md:flex-1'>
         <img src={assets.logo} alt="" className='w-36 h-auto' />
       </Link>
@@ -34,13 +34,22 @@ const Navbar = () => {
 
         <Link onClick={() => { window.scrollTo(0, 0); setIsOpen(false) }} to='/'>Home</Link>
         <Link onClick={() => { window.scrollTo(0, 0); setIsOpen(false) }} to='/movies'>Movies</Link>
-        <Link onClick={() => { window.scrollTo(0, 0); setIsOpen(false) }} to='/'>Theaters</Link>
-        <Link onClick={() => { window.scrollTo(0, 0); setIsOpen(false) }} to='/'>Releases</Link>
-        {favoriteMovies.length>0 && <Link onClick={() => { window.scrollTo(0, 0); setIsOpen(false) }} to='/favorite'>Favorites</Link>}
+        <Link onClick={() => { window.scrollTo(750, 750); setIsOpen(false) }} to='/'>Theaters</Link>
+        <Link onClick={() => { window.scrollTo(2000, 2000); setIsOpen(false) }} to='/'>Releases</Link>
+        {favoriteMovies.length > 0 && <Link onClick={() => { window.scrollTo(0, 0); setIsOpen(false) }} to='/favorite'>Favorites</Link>}
       </div>
 
       <div className='flex items-center gap-8'>
-        <SearchIcon className='max-md:hidden w-6 h-6 cursor-pointer' />
+
+        <Link
+          onClick={() => {
+            window.scrollTo(0, 0);
+            setIsOpen(false);
+          }}
+          to='/movies'
+        >
+          <SearchIcon className='max-md:hidden w-6 h-6 cursor-pointer' />
+        </Link>
 
         {!user ? (
           <button
@@ -52,7 +61,7 @@ const Navbar = () => {
         ) : (
           <UserButton>
             <UserButton.MenuItems>
-              <UserButton.Action label='My Bookings' labelIcon={<TicketPlus width={15}/>} onClick={()=>navigate('/my-bookings')} />
+              <UserButton.Action label='My Bookings' labelIcon={<TicketPlus width={15} />} onClick={() => navigate('/my-bookings')} />
             </UserButton.MenuItems>
           </UserButton>
         )}

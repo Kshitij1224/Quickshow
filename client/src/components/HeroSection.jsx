@@ -44,7 +44,7 @@ const HeroSection = () => {
         </p>
         
         <button 
-          onClick={()=>navigate('/movies')} 
+          onClick={()=>navigate('/movies', { behavior: 'smooth' })} 
           className='flex items-center gap-2 px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-red-600/50'
         >
           Book Tickets Now
