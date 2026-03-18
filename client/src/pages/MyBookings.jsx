@@ -9,14 +9,16 @@ import toast from 'react-hot-toast'
 
 const MyBookings = () => {
   const currency = import.meta.env.VITE_CURRENCY
-  const {axios,getToken,user,image_base_url}=useAppContext()  
+  const {axios,getToken,user,image_base_url}=useAppContext();
+  // console.log(axios,getToken,user,image_base_url);  
 
   const [bookings, setBookings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
 
   const getMyBookings = async () => {
     try {
-      const {data} = await axios.get('/api/user/bookings',{headers: {Authorization: `Bearer ${await getToken()}`}})
+      const {data} = await axios.get('/api/user/bookings',{headers: {Authorization: `Bearer ${await getToken()}`}});
+      console.log("Bookings data:", data)
       if(data.success){
         setBookings(data.bookings || [])
       } else {

@@ -1,6 +1,8 @@
 import { inngest } from "../inngest/index.js";
 import Booking from "../models/Booking.js";
-import Show from "../models/Show.js"
+import Show from "../models/Show.js";
+import User from "../models/user.js";
+import mongoose from "mongoose";
 import stripe from 'stripe'
 
 const checkSeatsAvailability = async(showId, selectedSeats) => {
@@ -21,6 +23,7 @@ const checkSeatsAvailability = async(showId, selectedSeats) => {
 export const createBooking = async(req,res) => {
     try {
         const {userId} = req.auth();
+        console.log(userId);
         const {showId,selectedSeats} = req.body;
         const {origin} = req.headers;
         const isAvailable = await checkSeatsAvailability(showId, selectedSeats)
@@ -42,7 +45,7 @@ export const createBooking = async(req,res) => {
         
         const booking = await Booking.create({
             user: userId,
-            show: showId,
+            show: new mongoose.Types.ObjectId(showId), // Store show ID as string
             amount: showData.showPrice*selectedSeats.length,
             bookedSeats: selectedSeats
         })
@@ -51,7 +54,7 @@ export const createBooking = async(req,res) => {
         
         // Manually set populated data to ensure it's available
         booking.user = user;
-        booking.show = showData;
+        // booking.show = showData;
         
         selectedSeats.map((seat)=>{
             showData.occupiedSeats[seat]=userId;
