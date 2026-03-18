@@ -34,7 +34,7 @@ const DateSelect = ({ dateTime, id }) => {
 
                         {/* Date buttons */}
                         <div className='flex flex-wrap gap-4 md:max-w-lg'>
-                            {dateTime && Object.keys(dateTime).map((date) => (
+                            {dateTime && Object.keys(dateTime).sort((a, b) => new Date(a) - new Date(b)).map((date) => (
                                 <button
                                     key={date}
                                     onClick={() => setSelected(date)}

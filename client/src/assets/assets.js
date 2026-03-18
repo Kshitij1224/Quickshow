@@ -4,6 +4,10 @@ import googlePlay from './googlePlay.svg'
 import appStore from './appStore.svg'
 import screenImage from './screenImage.svg'
 import profile from './profile.png'
+import toxic from './toxic.avif'
+import dune from './dune.avif'
+import spiderman from './spiderman.avif'
+import dhutrailer from './dhutrailer.avif'
 
 export const assets = {
     logo,
@@ -11,25 +15,29 @@ export const assets = {
     googlePlay,
     appStore,
     screenImage,
-    profile
+    profile,
+    toxic,
+    dune,
+    spiderman,
+    dhutrailer
 }
 
 export const dummyTrailers = [
     {
-        image: "https://img.youtube.com/vi/WpW36ldAqnM/maxresdefault.jpg",
-        videoUrl: 'https://www.youtube.com/watch?v=WpW36ldAqnM'
+        image: dhutrailer,
+        videoUrl: 'https://www.youtube.com/watch?v=NHk7scrb_9I'
     },
     {
-        image: "https://img.youtube.com/vi/-sAOWhvheK8/maxresdefault.jpg",
-        videoUrl: 'https://www.youtube.com/watch?v=-sAOWhvheK8'
+        image: spiderman,
+        videoUrl: 'https://www.youtube.com/watch?v=BwntXFBNfOA'
     },
     {
-        image: "https://img.youtube.com/vi/1pHDWnXmK7Y/maxresdefault.jpg",
-        videoUrl: 'https://www.youtube.com/watch?v=1pHDWnXmK7Y'
+        image: dune,
+        videoUrl: 'https://www.youtube.com/watch?v=3_9vCamtuPY'
     },
     {
-        image: "https://img.youtube.com/vi/umiKiW4En9g/maxresdefault.jpg",
-        videoUrl: 'https://www.youtube.com/watch?v=umiKiW4En9g'
+        image: toxic,
+        videoUrl: 'https://www.youtube.com/watch?v=cJXTUyEih7Y'
     },
 ]
 
