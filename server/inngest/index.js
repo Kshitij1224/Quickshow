@@ -83,12 +83,23 @@ const sendBookingConfirmationEmail = inngest.createFunction(
             })
             .populate('user');
 
+        console.log("BOOKING FOUND:", booking);
+        console.log("BOOKING USER:", booking?.user);
+        console.log("BOOKING SHOW:", booking?.show);
+
         if (!booking) {
-            throw new Error("Booking not found");
+            console.error("BOOKING NOT FOUND for ID:", bookingId);
+            throw new Error(`Booking not found for ID: ${bookingId}`);
         }
 
         if (!booking.user) {
-            throw new Error("User not found in booking");
+            console.error("USER NOT POPULATED in booking:", bookingId);
+            throw new Error(`User not populated in booking: ${bookingId}`);
+        }
+
+        if (!booking.show) {
+            console.error("SHOW NOT POPULATED in booking:", bookingId);
+            throw new Error(`Show not populated in booking: ${bookingId}`);
         }
 
         await sendEmail({
