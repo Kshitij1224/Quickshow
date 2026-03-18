@@ -27,6 +27,8 @@ export const createBooking = async(req,res) => {
         }
 
         const showData = await Show.findById(showId).populate('movie');
+        console.log("SHOW DATA:", showData);
+        
         const booking = await Booking.create({
             user: userId,
             show: showId,
@@ -34,14 +36,27 @@ export const createBooking = async(req,res) => {
             bookedSeats: selectedSeats
         })
         
+        console.log("BOOKING CREATED:", booking);
+        
+        // Populate user and show immediately after creation
         await booking.populate('user');
         await booking.populate('show');
         
+        console.log("BOOKING AFTER POPULATION:", booking);
+        
+        // Verify data exists before proceeding
+        if (!booking.user || !booking.show) {
+            console.error("POPULATION FAILED - User:", booking.user, "Show:", booking.show);
+            throw new Error("Population failed for booking: " + booking._id);
+        }
+
         selectedSeats.map((seat)=>{
             showData.occupiedSeats[seat]=userId;
         })
         showData.markModified('occupiedSeats');
         await showData.save();
+        
+        console.log("SHOW DATA UPDATED:", showData);
 
         const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY)
         const line_items=[{
