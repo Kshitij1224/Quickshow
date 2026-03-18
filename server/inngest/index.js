@@ -71,27 +71,36 @@ const sendBookingConfirmationEmail = inngest.createFunction(
     { id: "send-booking-confirmation-email" },
     { event: "app/show.booked" },
     async ({ event, step }) => {
+
         const { bookingId } = event.data;
-        const booking = await Booking.findById(bookingId).populate({
-            path: 'show',
-            populate: { path: "movie", model: "Movie" }
-        }).populate('user');
+
+        console.log("EVENT DATA:", event.data);
+
+        const booking = await Booking.findById(bookingId)
+            .populate({
+                path: 'show',
+                populate: { path: "movie", model: "Movie" }
+            })
+            .populate('user');
+
+        if (!booking) {
+            throw new Error("Booking not found");
+        }
+
+        if (!booking.user) {
+            throw new Error("User not found in booking");
+        }
+
         await sendEmail({
             to: booking.user.email,
             subject: `Payment Confirmation: "${booking.show.movie.title}" booked!`,
-            body: `<div style="font-family: Arial, sans-serif; line-height: 1.5;">
+            body: `<div>
                     <h2>Hi ${booking.user.name},</h2>
-                    <p>Your booking for <strong style="color: #F84565;">"${booking.show.movie.title}"</strong> is confirmed.</p>
-                    <p>
-                        <strong>Date:</strong> ${new Date(booking.show.showDateTime).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' })}<br/>
-                         <strong>Time:</strong> ${new Date(booking.show.showDateTime).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' })}
-                    </p>
-                    <p>Enjoy the show! 🍿</p>
-                    <p>Thanks for booking with us!<br/>— QuickShow Team</p>
-                    </div>`
-        })
+                    <p>Your booking for "${booking.show.movie.title}" is confirmed.</p>
+                   </div>`
+        });
     }
-)
+);
 
 const sendShowReminders = inngest.createFunction(
     {id: "send-show-reminders"},
