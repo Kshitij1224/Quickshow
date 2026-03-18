@@ -29,6 +29,15 @@ export const createBooking = async(req,res) => {
         const showData = await Show.findById(showId).populate('movie');
         console.log("SHOW DATA:", showData);
         
+        // Get user data separately to ensure it exists
+        const user = await User.findById(userId);
+        console.log("USER DATA:", user);
+        
+        if (!user) {
+            console.error("USER NOT FOUND for ID:", userId);
+            return res.json({success: false, message: "User not found"});
+        }
+        
         const booking = await Booking.create({
             user: userId,
             show: showId,
@@ -38,18 +47,10 @@ export const createBooking = async(req,res) => {
         
         console.log("BOOKING CREATED:", booking);
         
-        // Populate user and show immediately after creation
-        await booking.populate('user');
-        await booking.populate('show');
+        // Manually set populated data to ensure it's available
+        booking.user = user;
+        booking.show = showData;
         
-        console.log("BOOKING AFTER POPULATION:", booking);
-        
-        // Verify data exists before proceeding
-        if (!booking.user || !booking.show) {
-            console.error("POPULATION FAILED - User:", booking.user, "Show:", booking.show);
-            throw new Error("Population failed for booking: " + booking._id);
-        }
-
         selectedSeats.map((seat)=>{
             showData.occupiedSeats[seat]=userId;
         })
