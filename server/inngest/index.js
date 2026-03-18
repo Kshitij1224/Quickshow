@@ -93,10 +93,149 @@ const sendBookingConfirmationEmail = inngest.createFunction(
     }
 )
 
+const sendShowReminders = inngest.createFunction(
+    {id: "send-show-reminders"},
+    {cron: "0 */8 * * *"},
+    async({step})=>{
+        const now = new Date();
+        const in8Hours = new Date(now.getTime()+8*60*60*1000);
+        const windowStart = new Date(in8Hours.getTime()-10*60*1000);
+        const reminderTasks = await step.run(
+            "prepare-reminder-tasks",async()=>{
+                const shows = await Show.find({
+                    showTime: {$gte: windowStart, $lte: in8Hours},
+                }).populate('movie');
+                const tasks = [];
+                for(const show of shows){
+                    if(!show.movie || !show.occupiedSeats) continue;
+                    const userIds= [...new Set(Object.values(show.occupiedSeats))];
+                    if(userIds.length===0) continue;
+                    const users = await User.find({_id: {$in: userIds}}).select("name email");
+                    for(const user of users){
+                        tasks.push({
+                            userEmail: user.email,
+                            userName: user.name,
+                            movieTitle: show.movie.title,
+                            showTime: show.showTime,
+                        })
+                    }
+                }
+                return tasks;
+            }
+        )
+        if(reminderTasks.length===0){
+            return {sent: 0 , message: "No reminders to send."}
+        }
+        const results = await step.run('send-all-reminders',async()=>{
+            return await Promise.allSettled(
+                reminderTasks.map(task=>sendEmail({
+                    to: task.userEmail,
+                    subject: `Movie Reminder: "${task.movieTitle}" starts soon!`,
+                    body: `<div style="font-family: Arial, sans-serif; line-height: 1.5; max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: #F84565;">Hi ${task.userName},</h2>
+                            <p>This is a friendly reminder that your movie <strong style="color: #F84565;">"${task.movieTitle}"</strong> starts in about 8 hours!</p>
+                            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                <p><strong>Movie:</strong> ${task.movieTitle}</p>
+                                <p><strong>Show Time:</strong> ${new Date(task.showTime).toLocaleString('en-US', { 
+                                    timeZone: 'Asia/Kolkata', 
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}</p>
+                            </div>
+                            <p>Please arrive 15 minutes before the show time. Enjoy the movie! 🍿</p>
+                            <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">See you at the movies!<br/>— QuickShow Team</p>
+                        </div>`
+                }))
+            )
+        })
+        
+        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        
+        return { 
+            sent: successful, 
+            failed, 
+            total: reminderTasks.length,
+            message: `Sent ${successful} reminders, ${failed} failed.` 
+        };
+    }
+)
+
+const sendNewShowNotifications = inngest.createFunction(
+    {id: "send-new-show-notifications"},
+    {event: "app/show.created"},
+    async({event, step})=>{
+        const {showId, movieId} = event.data;
+        
+        const showData = await step.run('get-show-details', async()=>{
+            const show = await Show.findById(showId).populate('movie');
+            if(!show || !show.movie) {
+                throw new Error('Show or movie not found');
+            }
+            return show;
+        });
+        
+        const users = await step.run('get-all-users', async()=>{
+            return await User.find({}).select('name email');
+        });
+        
+        if(users.length === 0) {
+            return {sent: 0, message: "No users to notify"};
+        }
+        
+        const results = await step.run('send-notifications', async()=>{
+            return await Promise.allSettled(
+                users.map(user=>sendEmail({
+                    to: user.email,
+                    subject: `🎬 New Show Available: "${showData.movie.title}"`,
+                    body: `<div style="font-family: Arial, sans-serif; line-height: 1.5; max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: #F84565;">Hi ${user.name},</h2>
+                            <p>Great news! A new show has been added for <strong style="color: #F84565;">"${showData.movie.title}"</strong>!</p>
+                            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                <p><strong>Movie:</strong> ${showData.movie.title}</p>
+                                <p><strong>Duration:</strong> ${showData.movie.runtime} minutes</p>
+                                <p><strong>New Show Times:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    ${Object.entries(showData.dateTime || {}).map(([date, times]) => 
+                                        `<li><strong>${new Date(date).toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'})}:</strong> ${times.map(t => new Date(t.time).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})).join(', ')}</li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                            <p>Book your tickets now before they sell out! 🍿</p>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/movie/${showData.movie._id}" 
+                                   style="background-color: #F84565; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">
+                                    Book Now
+                                </a>
+                            </div>
+                            <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">Don't miss out on this amazing movie!<br/>— QuickShow Team</p>
+                        </div>`
+                }))
+            )
+        });
+        
+        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        
+        return { 
+            sent: successful, 
+            failed, 
+            total: users.length,
+            message: `Sent ${successful} new show notifications, ${failed} failed.` 
+        };
+    }
+)
+
 export const functions = [
     syncUserCreation,
     syncUserDeletion,
     syncUserUpdation,
     releaseSeatsAndDeleteBooking,
-    sendBookingConfirmationEmail
+    sendBookingConfirmationEmail,
+    sendShowReminders,
+    sendNewShowNotifications
 ];
