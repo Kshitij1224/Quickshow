@@ -65,38 +65,6 @@ A modern, full-stack movie ticket booking application built with React, Node.js,
 - Clerk account
 - TMDB API key
 
-### Environment Variables
-
-Create a `.env` file in the `server` directory:
-
-```env
-# Database
-MONGODB_URL=mongodb://localhost:27017/quickshow
-
-# Clerk Authentication
-CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
-CLERK_WEBHOOK_SECRET=your_clerk_webhook_secret
-
-# Stripe Payment
-STRIPE_SECRET_KEY=your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
-
-# Email Configuration
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
-
-# TMDB API
-TMDB_API_KEY=your_tmdb_api_key
-
-# Application
-CLIENT_URL=http://localhost:5173
-VITE_CURRENCY=₹
-VITE_TMDB_IMAGE_BASE_URL=https://image.tmdb.org/t/p/w500
-```
-
 ## 📁 Project Structure
 
 ```
