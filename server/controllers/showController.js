@@ -94,14 +94,22 @@ export const addShow = async (req, res) => {
             })
         });
 
+        let createdShows = [];
+
         if (showsToCreate.length > 0) {
-            await Show.insertMany(showsToCreate);
+            createdShows = await Show.insertMany(showsToCreate);
         }
 
-        await inngest.send({
-            name: "app/show.added",
-            data: {movieTitle: movie.title}
-        })
+        if (createdShows.length > 0) {
+            await inngest.send({
+                name: "app/show.added",
+                data: {
+                    showId: createdShows[0]._id.toString(),
+                    movieId: movie._id,
+                    movieTitle: movie.title,
+                }
+            })
+        }
 
         res.json({ success: true, message: 'Show Added successfully.' })
 

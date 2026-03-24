@@ -4,6 +4,8 @@ import Show from "../models/Show.js";
 import User from "../models/user.js";
 import mongoose from "mongoose";
 import stripe from 'stripe'
+import { markBookingPaid } from "../config/bookingPayment.js";
+import { sendBookingConfirmationEmail } from "../config/bookingConfirmationEmail.js";
 
 const checkSeatsAvailability = async(showId, selectedSeats) => {
     try {
@@ -76,7 +78,7 @@ export const createBooking = async(req,res) => {
             quantity: 1
         }]
         const session = await stripeInstance.checkout.sessions.create({
-            success_url: `${origin}/loading/my-bookings`,
+            success_url: `${origin}/my-bookings?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/my-bookings`,
             line_items: line_items,
             mode: 'payment',
@@ -113,5 +115,46 @@ export const getOccupiedSeats = async(req,res)=>{
     } catch (error) {
         console.log(error.message);
         res.json({success: false,message: error.message})  
+    }
+}
+
+export const confirmBookingPayment = async (req, res) => {
+    try {
+        const { userId } = req.auth();
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.json({ success: false, message: "sessionId is required" });
+        }
+
+        const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
+        const session = await stripeInstance.checkout.sessions.retrieve(sessionId);
+        const bookingId = session.metadata?.bookingId;
+
+        if (!bookingId) {
+            return res.json({ success: false, message: "Booking metadata not found in Stripe session" });
+        }
+
+        const booking = await Booking.findById(bookingId);
+
+        if (!booking) {
+            return res.json({ success: false, message: "Booking not found" });
+        }
+
+        if (booking.user !== userId) {
+            return res.json({ success: false, message: "Not authorized for this booking" });
+        }
+
+        if (session.payment_status !== "paid") {
+            return res.json({ success: false, message: "Payment is not completed yet" });
+        }
+
+        await markBookingPaid(bookingId);
+        await sendBookingConfirmationEmail(bookingId);
+
+        res.json({ success: true, message: "Booking confirmed successfully", bookingId });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
     }
 }

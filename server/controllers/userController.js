@@ -2,6 +2,7 @@ import { logLevels } from "inngest/types";
 import Booking from "../models/Booking.js";
 import { clerkClient } from "@clerk/express";
 import Movie from "../models/Movie.js";
+import { sendBookingConfirmationEmail } from "../config/bookingConfirmationEmail.js";
 
 export const getUserBookings = async(req,res)=>{
     try {
@@ -48,5 +49,33 @@ export const getFavorites = async(req,res)=>{
     } catch (error) {
         console.error(error.message);
         res.json({success: false,message: error.message});
+    }
+}
+
+export const resendBookingConfirmationEmail = async (req, res) => {
+    try {
+        const userId = req.auth().userId;
+        const { bookingId } = req.body;
+
+        if (!bookingId) {
+            return res.json({ success: false, message: "bookingId is required" });
+        }
+
+        const booking = await Booking.findById(bookingId);
+
+        if (!booking) {
+            return res.json({ success: false, message: "Booking not found" });
+        }
+
+        if (booking.user !== userId) {
+            return res.json({ success: false, message: "Not authorized for this booking" });
+        }
+
+        await sendBookingConfirmationEmail(bookingId);
+
+        res.json({ success: true, message: "Confirmation email sent." });
+    } catch (error) {
+        console.error(error.message);
+        res.json({ success: false, message: error.message });
     }
 }

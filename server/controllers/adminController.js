@@ -1,6 +1,7 @@
 import Booking from "../models/Booking.js"
 import Show from "../models/Show.js";
 import User from "../models/user.js";
+import { sendBookingConfirmationEmail } from "../config/bookingConfirmationEmail.js";
 
 export const isAdmin = async(req,res)=>{
     res.json({success: true,isAdmin: true})
@@ -44,5 +45,25 @@ export const getAllBookings= async(req,res)=>{
     } catch (error) {
         console.error(error);
         res.json({success: false,message: error.message})
+    }
+}
+
+export const sendTestConfirmationEmail = async (req, res) => {
+    try {
+        const { bookingId, email } = req.body;
+
+        if (!bookingId) {
+            return res.json({ success: false, message: "bookingId is required" });
+        }
+
+        const booking = await sendBookingConfirmationEmail(bookingId, email?.trim());
+
+        res.json({
+            success: true,
+            message: `Confirmation email sent to ${email?.trim() || booking.user.email}`,
+        });
+    } catch (error) {
+        console.error(error);
+        res.json({ success: false, message: error.message });
     }
 }

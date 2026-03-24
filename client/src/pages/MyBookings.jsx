@@ -4,16 +4,18 @@ import Loading from '../components/Loading'
 import { timeFormat } from '../lib/timeFormat'
 import { dateFormat } from '../lib/dateFormat'
 import { useAppContext } from '../context/AppContext'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 const MyBookings = () => {
   const currency = import.meta.env.VITE_CURRENCY
   const {axios,getToken,user,image_base_url}=useAppContext();
+  const [searchParams, setSearchParams] = useSearchParams()
   // console.log(axios,getToken,user,image_base_url);  
 
   const [bookings, setBookings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [confirmingPayment, setConfirmingPayment] = useState(false)
 
   const getMyBookings = async () => {
     try {
@@ -31,11 +33,43 @@ const MyBookings = () => {
     setIsLoading(false)
   }
 
+  const confirmPaymentFromSession = async () => {
+    const sessionId = searchParams.get('session_id')
+    if (!sessionId || !user) return
+
+    try {
+      setConfirmingPayment(true)
+      const { data } = await axios.post(
+        '/api/booking/confirm-payment',
+        { sessionId },
+        { headers: { Authorization: `Bearer ${await getToken()}` } }
+      )
+
+      if (data.success) {
+        toast.success('Booking confirmed and email sent.')
+      } else {
+        toast.error(data.message || 'Failed to confirm booking payment')
+      }
+    } catch (error) {
+      console.log('Confirm payment error:', error)
+      toast.error(error.response?.data?.message || 'Failed to confirm booking payment')
+    }
+
+    setSearchParams({}, { replace: true })
+    setConfirmingPayment(false)
+  }
+
   useEffect(() => {
     if(user){
       getMyBookings()
     } else {
       setIsLoading(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      confirmPaymentFromSession()
     }
   }, [user])
 
@@ -80,6 +114,9 @@ const MyBookings = () => {
       <BlurCircle bottom='0' left="600px"/>
       
       <h1 className='text-lg font-semibold mb-4'>My Bookings</h1>
+      {confirmingPayment && (
+        <p className='text-sm text-primary mb-4'>Confirming your payment and sending email...</p>
+      )}
       
       {bookings.map((item, index) => (
         <div key={item._id || index} className='flex flex-col md:flex-row justify-between bg-primary/8 border border-primary/20 rounded-lg mt-4 p-2 w-full max-w-3xl'>

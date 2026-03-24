@@ -1,6 +1,22 @@
 import stripe from "stripe";
-import Booking from "../models/Booking.js";
-import { inngest } from "../inngest/index.js";
+import { sendBookingConfirmationEmail } from "../config/bookingConfirmationEmail.js";
+import { markBookingPaid } from "../config/bookingPayment.js";
+
+const getBookingIdFromEvent = async (stripeInstance, event) => {
+    if (event.type === "checkout.session.completed") {
+        return event.data.object.metadata?.bookingId;
+    }
+
+    if (event.type === "payment_intent.succeeded") {
+        const paymentIntent = event.data.object;
+        const sessionList = await stripeInstance.checkout.sessions.list({
+            payment_intent: paymentIntent.id
+        });
+        return sessionList.data[0]?.metadata?.bookingId;
+    }
+
+    return null;
+};
 
 export const stripeWebhooks = async(req,res)=>{
     const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
@@ -14,25 +30,22 @@ export const stripeWebhooks = async(req,res)=>{
     }
      
     try {
+        console.log("Stripe webhook event:", event.type);
+
         switch (event.type) {
-            case "payment_intent.succeeded":{
-                const paymentIntent = event.data.object;
-                const sessionList = await stripeInstance.checkout.sessions.list({
-                    payment_intent: paymentIntent.id
-                })
-                const session = sessionList.data[0];
-                const {bookingId} = session.metadata;
-                await Booking.findByIdAndUpdate(bookingId,{
-                    isPaid: true,
-                    paymentLink: ""
-                })
-                await inngest.send({
-                    name: "app/show.booked",
-                    data: {bookingId: bookingId}
-                })
+            case "checkout.session.completed": {
+                const bookingId = await getBookingIdFromEvent(stripeInstance, event);
+                await markBookingPaid(bookingId);
+                await sendBookingConfirmationEmail(bookingId);
                 break;
             }
-                
+            case "payment_intent.succeeded":{
+                const bookingId = await getBookingIdFromEvent(stripeInstance, event);
+                await markBookingPaid(bookingId);
+                await sendBookingConfirmationEmail(bookingId);
+                break;
+            }
+                 
             default:
                 console.log("Unhandled event type:",event.type)
         }
