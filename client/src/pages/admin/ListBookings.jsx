@@ -1,5 +1,4 @@
 import React,{useEffect, useState} from 'react'
-import { dummyBookingData } from '../../assets/assets';
 import Title from '../../components/admin/Title';
 import { dateFormat } from '../../lib/dateFormat';
 import { useAppContext } from '../../context/AppContext';
@@ -7,7 +6,7 @@ import toast from 'react-hot-toast';
 
 const ListBookings = () => {
   const currency = import.meta.env.VITE_CURRENCY
-  const {axios,getToken,user,image_base_url}=useAppContext() 
+  const {axios,getToken,user}=useAppContext() 
 
   const [bookings,setBookings]=useState([]);
   const [isLoading,setIsLoading]=useState(true);
@@ -35,6 +34,11 @@ const ListBookings = () => {
 
   return isLoading ? (
     <p className="p-4">Loading...</p>
+  ) : bookings.length === 0 ? (
+    <>
+      <Title text1="List" text2="Bookings" />
+      <p className="mt-6 text-sm text-gray-400">No bookings found.</p>
+    </>
   ) : (
     <>
       <Title text1="List" text2="Bookings" />
@@ -51,11 +55,11 @@ const ListBookings = () => {
           </thead>
           <tbody className='text-sm font-light'>
             {bookings.map((item, index) => (
-              <tr key={index} className="border-b border-primary/20 bg-primary/5 even:bg-primary/10">
-                <td className="p-2 min-w-45 pl-5">{item.user.name}</td>
-                <td className="p-2">{item.show.movie.title}</td>
-                <td className="p-2">{dateFormat(item.show.showDateTime)}</td>
-                <td className="p-2">{Object.keys(item.bookedSeats).map(seat=>item.bookedSeats[seat]).join(", ")}</td>
+              <tr key={item._id || index} className="border-b border-primary/20 bg-primary/5 even:bg-primary/10">
+                <td className="p-2 min-w-45 pl-5">{item.user?.name || 'Unknown User'}</td>
+                <td className="p-2">{item.show?.movie?.title || 'Unknown Movie'}</td>
+                <td className="p-2">{item.show?.showDateTime ? dateFormat(item.show.showDateTime) : 'N/A'}</td>
+                <td className="p-2">{Array.isArray(item.bookedSeats) ? item.bookedSeats.join(", ") : 'N/A'}</td>
                 <td className="p-2">
                   {currency}{item.amount}
                 </td>
